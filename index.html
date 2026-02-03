@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ESP32 Web Bluetooth</title>
+</head>
+<body>
+  <h1>ESP32 Control</h1>
+
+  <button id="startBtn">Start Program</button>
+
+  <pre id="log"></pre>
+
+<script>
+const UART_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+const UART_TX = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const UART_RX = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+
+let device, server, service, txChar, rxChar;
+
+function log(msg) {
+  document.getElementById("log").textContent += msg + "\n";
+}
+
+document.getElementById("startBtn").onclick = async () => {
+  try {
+    log("Requesting device...");
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: "ESP32_BLE" }],
+      optionalServices: [UART_SERVICE]
+    });
+
+    log("Connecting...");
+    server = await device.gatt.connect();
+
+    service = await server.getPrimaryService(UART_SERVICE);
+    txChar = await service.getCharacteristic(UART_TX);
+    rxChar = await service.getCharacteristic(UART_RX);
+
+    await txChar.startNotifications();
+    txChar.addEventListener("characteristicvaluechanged", event => {
+      let value = new TextDecoder().decode(event.target.value);
+      log("ESP32: " + value);
+    });
+
+    log("Connected. Program started.");
+
+    // Example: send a start command to ESP32
+    await rxChar.writeValue(new TextEncoder().encode("START"));
+
+  } catch (error) {
+    log("Error: " + error);
+  }
+};
+</script>
+</body>
+</html>
