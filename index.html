@@ -25,8 +25,11 @@
     document.getElementById("connect").onclick = async () => {
       try {
         device = await navigator.bluetooth.requestDevice({
-          filters: [{ name: "ESP32C6_LED" }],
+          fdevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
           optionalServices: [SERVICE_UUID]
+});
+
         });
 
         server = await device.gatt.connect();
