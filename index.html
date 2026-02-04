@@ -2,56 +2,51 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>ESP32 Web Bluetooth</title>
+  <title>ESP32-C6 LED Controller</title>
+  <style>
+    body { font-family: Arial; text-align: center; padding-top: 40px; }
+    button { font-size: 20px; padding: 15px 30px; margin: 10px; }
+  </style>
 </head>
 <body>
-  <h1>ESP32 Control</h1>
 
-  <button id="startBtn">Start Program</button>
+  <h1>ESP32-C6 LED Controller</h1>
+  <button id="connect">Connect</button>
+  <br><br>
+  <button id="onBtn">LED ON</button>
+  <button id="offBtn">LED OFF</button>
 
-  <pre id="log"></pre>
+  <script>
+    let device, server, service, characteristic;
 
-<script>
-const UART_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-const UART_TX = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-const UART_RX = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
+    const CHAR_UUID = "12345678-1234-5678-1234-56789abcdef1";
 
-let device, server, service, txChar, rxChar;
+    document.getElementById("connect").onclick = async () => {
+      try {
+        device = await navigator.bluetooth.requestDevice({
+          filters: [{ name: "ESP32C6_LED" }],
+          optionalServices: [SERVICE_UUID]
+        });
 
-function log(msg) {
-  document.getElementById("log").textContent += msg + "\n";
-}
+        server = await device.gatt.connect();
+        service = await server.getPrimaryService(SERVICE_UUID);
+        characteristic = await service.getCharacteristic(CHAR_UUID);
 
-document.getElementById("startBtn").onclick = async () => {
-  try {
-    log("Requesting device...");
-    device = await navigator.bluetooth.requestDevice({
-      filters: [{ name: "ESP32_BLE" }],
-      optionalServices: [UART_SERVICE]
-    });
+        alert("Connected to ESP32-C6!");
+      } catch (error) {
+        alert("Connection failed: " + error);
+      }
+    };
 
-    log("Connecting...");
-    server = await device.gatt.connect();
+    document.getElementById("onBtn").onclick = () => {
+      if (characteristic) characteristic.writeValue(new TextEncoder().encode("1"));
+    };
 
-    service = await server.getPrimaryService(UART_SERVICE);
-    txChar = await service.getCharacteristic(UART_TX);
-    rxChar = await service.getCharacteristic(UART_RX);
+    document.getElementById("offBtn").onclick = () => {
+      if (characteristic) characteristic.writeValue(new TextEncoder().encode("0"));
+    };
+  </script>
 
-    await txChar.startNotifications();
-    txChar.addEventListener("characteristicvaluechanged", event => {
-      let value = new TextDecoder().decode(event.target.value);
-      log("ESP32: " + value);
-    });
-
-    log("Connected. Program started.");
-
-    // Example: send a start command to ESP32
-    await rxChar.writeValue(new TextEncoder().encode("START"));
-
-  } catch (error) {
-    log("Error: " + error);
-  }
-};
-</script>
 </body>
 </html>
