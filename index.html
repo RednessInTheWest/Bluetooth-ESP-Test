@@ -24,29 +24,44 @@
 
   document.getElementById("connect").onclick = async () => {
     try {
+      console.log("Requesting device...");
       device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: [SERVICE_UUID]
       });
 
+      console.log("Connecting to GATT server...");
       server = await device.gatt.connect();
+
+      console.log("Getting primary service...");
       service = await server.getPrimaryService(SERVICE_UUID);
+
+      console.log("Getting characteristic...");
       characteristic = await service.getCharacteristic(CHAR_UUID);
 
+      console.log("Connected to:", device.name);
       alert("Connected to ESP32-C6!");
     } catch (error) {
+      console.error("Connection failed:", error);
       alert("Connection failed: " + error);
     }
   };
 
   document.getElementById("onBtn").onclick = () => {
-    if (characteristic) characteristic.writeValue(new TextEncoder().encode("1"));
+    if (characteristic) {
+      console.log("Sending: 1");
+      characteristic.writeValue(new TextEncoder().encode("1"));
+    }
   };
 
   document.getElementById("offBtn").onclick = () => {
-    if (characteristic) characteristic.writeValue(new TextEncoder().encode("0"));
+    if (characteristic) {
+      console.log("Sending: 0");
+      characteristic.writeValue(new TextEncoder().encode("0"));
+    }
   };
 </script>
+
 
 
 </body>
